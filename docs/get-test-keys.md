@@ -11,9 +11,9 @@
 ## Moyasar
 
 1. Sign up for free at [dashboard.moyasar.com](https://dashboard.moyasar.com/register/new).
-2. Make sure the dashboard is in **Test mode**.
-3. Go to **Settings → API Keys** and create or copy your **secret key**. It starts with `sk_test_`.
-   The secret key is shown **only once**, so save it somewhere safe (a password manager).
+2. Go to **Settings → API Keys** and find the **Test Keys** section. The Live/Test switch at the top doesn't matter here: it only changes which payments the dashboard shows.
+3. Copy the test **Secret Key** (it starts with `sk_test_`). It is shown **only once**, so save it somewhere safe (a password manager).
+   Lost it? Click **Regenerate Key** next to the **test** secret key. Never regenerate the live keys.
 4. In Postman, open the **Moyasar (test)** environment and paste the key into `api_key`. Save.
 
 Moyasar also gives you a **publishable key** (`pk_test_...`). It is meant for your website's payment form. The collections here use the secret key.

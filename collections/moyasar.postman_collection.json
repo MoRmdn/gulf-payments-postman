@@ -43,9 +43,15 @@
                   "  pm.expect(body.status).to.eql(\"initiated\");",
                   "});",
                   "",
-                  "// Save the id and the OTP link for the next requests.",
-                  "pm.collectionVariables.set(\"payment_id\", body.id);",
-                  "pm.collectionVariables.set(\"otp_url\", body.source.transaction_url);"
+                  "if (pm.response.code === 201) {",
+                  "  // Save the id and the OTP link for the next requests.",
+                  "  pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "  pm.collectionVariables.set(\"otp_url\", body.source.transaction_url);",
+                  "} else {",
+                  "  // No payment was created, so stop the run here instead of",
+                  "  // failing every next request with confusing errors.",
+                  "  pm.execution.setNextRequest(null);",
+                  "}"
                 ]
               }
             }
@@ -243,9 +249,15 @@
                   "  pm.expect(body.status).to.eql(\"initiated\");",
                   "});",
                   "",
-                  "pm.collectionVariables.set(\"payment_id\", body.id);",
-                  "pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
-                  "console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);"
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "  pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
+                  "  console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);",
+                  "} else {",
+                  "  // No payment was created, so stop the run here instead of",
+                  "  // failing every next request with confusing errors.",
+                  "  pm.execution.setNextRequest(null);",
+                  "}"
                 ]
               }
             }
@@ -436,9 +448,15 @@
                   "  pm.expect(body.status).to.eql(\"initiated\");",
                   "});",
                   "",
-                  "pm.collectionVariables.set(\"payment_id\", body.id);",
-                  "pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
-                  "console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);"
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "  pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
+                  "  console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);",
+                  "} else {",
+                  "  // No payment was created, so stop the run here instead of",
+                  "  // failing every next request with confusing errors.",
+                  "  pm.execution.setNextRequest(null);",
+                  "}"
                 ]
               }
             }
