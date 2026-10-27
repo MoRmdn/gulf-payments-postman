@@ -1,0 +1,687 @@
+{
+  "info": {
+    "_postman_id": "b0aaf942-26d9-28d0-0e57-6930d874453c",
+    "name": "HyperPay - Beginner Guide",
+    "description": "# HyperPay (OPPWA) for beginners\n\nLearn the HyperPay API by sending requests to the **test** server. No real money moves.\n\n## Start in 3 steps\n1. Pick the **HyperPay (test)** environment (top right corner).\n2. Open folder **1. Quick start (no browser)**.\n3. Click **Send** on each request, in order, and read the **Test Results** tab.\n\n## Good to know\n- Request bodies are **form fields** (Body → x-www-form-urlencoded), not JSON.\n- Every request needs `entityId` and a Bearer token. Both are filled in with HyperPay's **shared demo account**.\n- The shared demo account only accepts **EUR**. With your own HyperPay test account, set `currency` to **SAR**.\n- Success is decided by `result.code`, not by the HTTP status alone.\n\n---\n\n# HyperPay للمبتدئين\n\nتعلّم واجهة HyperPay بإرسال طلبات إلى **خادم الاختبار**. لا تتحرك أي أموال حقيقية.\n\n## ابدأ في 3 خطوات\n1. اختر البيئة **HyperPay (test)** من الزاوية العلوية.\n2. افتح المجلد **1. Quick start (no browser)**.\n3. اضغط **Send** على كل طلب بالترتيب، واقرأ تبويب **Test Results**.\n\n## معلومات مهمة\n- جسم الطلب **حقول نموذج** (x-www-form-urlencoded) وليس JSON.\n- كل طلب يحتاج `entityId` ورمز Bearer، وكلاهما معبأ ببيانات **الحساب التجريبي المشترك** من HyperPay.\n- الحساب التجريبي المشترك يقبل **EUR** فقط. مع حسابك التجريبي الخاص غيّر `currency` إلى **SAR**.\n- نجاح العملية يُعرف من `result.code` وليس من رمز HTTP وحده.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Quick start (no browser)",
+      "description": "Charge a test card, check it, then refund it. Run the 3 requests in order.\n\nاخصم مبلغاً من بطاقة تجريبية، ثم تحقق من العملية، ثم استرجع المبلغ. نفّذ الطلبات الثلاثة بالترتيب.",
+      "item": [
+        {
+          "name": "1. Pay with a card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "// Save the payment id. The next requests use it as {{payment_id}}.",
+                  "pm.collectionVariables.set(\"payment_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text",
+                  "description": "Your channel id. Every HyperPay request needs it."
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Always 2 decimals, as text: 10.00 = ten"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text",
+                  "description": "Set in the environment (EUR for the shared demo account, SAR for your own)"
+                },
+                {
+                  "key": "paymentBrand",
+                  "value": "VISA",
+                  "type": "text",
+                  "description": "VISA, MASTER or MADA"
+                },
+                {
+                  "key": "card.number",
+                  "value": "4200000000000000",
+                  "type": "text",
+                  "description": "Test card number (fake money)"
+                },
+                {
+                  "key": "card.holder",
+                  "value": "Jane Jones",
+                  "type": "text",
+                  "description": "Name on the card"
+                },
+                {
+                  "key": "card.expiryMonth",
+                  "value": "12",
+                  "type": "text",
+                  "description": "Any future date works in test mode"
+                },
+                {
+                  "key": "card.expiryYear",
+                  "value": "2030",
+                  "type": "text"
+                },
+                {
+                  "key": "card.cvv",
+                  "value": "123",
+                  "type": "text",
+                  "description": "Any 3 digits in test mode"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "DB",
+                  "type": "text",
+                  "description": "DB = debit: take the money now"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments",
+            "description": "**What it does:** charges a test VISA card 10.00 directly from your server. This card has no 3-D Secure, so no browser is needed.\n\n**Look at:** `result.code`. `000.100.110` means success in test mode. The `id` is saved as `{{payment_id}}`.\n\n**Next:** run *2. Check the payment*.\n\n> In a real app, card numbers must never touch your server unless you are PCI certified. Websites use the COPYandPAY widget instead (folder 4).\n\n---\n\n**ماذا يفعل:** يخصم 10.00 من بطاقة VISA تجريبية مباشرة من الخادم. هذه البطاقة لا تطلب 3-D Secure، لذلك لا تحتاج إلى متصفح.\n\n**انظر إلى:** `result.code`. الرمز `000.100.110` يعني نجاح العملية في وضع الاختبار. يُحفظ `id` في المتغير `{{payment_id}}`.\n\n**التالي:** نفّذ *2. Check the payment*.\n\n> في التطبيق الحقيقي لا يجوز أن تمر أرقام البطاقات عبر خادمك إلا إذا كنت حاصلاً على شهادة PCI. المواقع تستخدم أداة COPYandPAY بدلاً من ذلك (المجلد 4)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check the payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "pm.test(\"It is the same payment\", () => {",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get(\"payment_id\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/v1/query/{{payment_id}}?entityId={{entity_id}}",
+            "description": "**What it does:** asks HyperPay for the payment you just made. Use this whenever you are not sure what happened to a payment.\n\n**Look at:** `result.code`, `amount`, `paymentType` (`DB`).\n\n**Next:** run *3. Refund the payment*.\n\n---\n\n**ماذا يفعل:** يسأل HyperPay عن العملية التي نفذتها للتو. استخدمه كلما لم تكن متأكداً مما حدث لعملية دفع.\n\n**انظر إلى:** `result.code` و `amount` و `paymentType` (`DB`).\n\n**التالي:** نفّذ *3. Refund the payment*."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Refund the payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "pm.test(\"This is a refund (RF)\", () => {",
+                  "  pm.expect(body.paymentType).to.eql(\"RF\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Must not be more than the original payment"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "RF",
+                  "type": "text",
+                  "description": "RF = refund: give the money back"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments/{{payment_id}}",
+            "description": "**What it does:** gives the money back to the card. You can refund all of it or part of it (change `amount`).\n\n**Look at:** `paymentType` is `RF` and `referencedId` points to the original payment.\n\n---\n\n**ماذا يفعل:** يعيد المبلغ إلى البطاقة. يمكنك استرجاع المبلغ كاملاً أو جزءاً منه (غيّر `amount`).\n\n**انظر إلى:** `paymentType` قيمته `RF`، و `referencedId` يشير إلى العملية الأصلية."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Authorize, then capture",
+      "description": "Hold money first, take it later, then refund it.\n\nاحجز المبلغ أولاً، ثم اخصمه لاحقاً، ثم استرجعه.",
+      "item": [
+        {
+          "name": "1. Authorize (hold the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "// Save the authorization id for the next request.",
+                  "pm.collectionVariables.set(\"authorization_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text",
+                  "description": "Your channel id. Every HyperPay request needs it."
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Always 2 decimals, as text: 10.00 = ten"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text",
+                  "description": "Set in the environment (EUR for the shared demo account, SAR for your own)"
+                },
+                {
+                  "key": "paymentBrand",
+                  "value": "MASTER",
+                  "type": "text",
+                  "description": "VISA, MASTER or MADA"
+                },
+                {
+                  "key": "card.number",
+                  "value": "5454545454545454",
+                  "type": "text",
+                  "description": "Test card number (fake money)"
+                },
+                {
+                  "key": "card.holder",
+                  "value": "Jane Jones",
+                  "type": "text",
+                  "description": "Name on the card"
+                },
+                {
+                  "key": "card.expiryMonth",
+                  "value": "12",
+                  "type": "text",
+                  "description": "Any future date works in test mode"
+                },
+                {
+                  "key": "card.expiryYear",
+                  "value": "2030",
+                  "type": "text"
+                },
+                {
+                  "key": "card.cvv",
+                  "value": "123",
+                  "type": "text",
+                  "description": "Any 3 digits in test mode"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "PA",
+                  "type": "text",
+                  "description": "PA = pre-authorization: only hold the money"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments",
+            "description": "**What it does:** holds 10.00 on the card without taking it yet. Hotels and car rentals work this way.\n\n**Look at:** `paymentType` is `PA`. The `id` is saved as `{{authorization_id}}`.\n\n---\n\n**ماذا يفعل:** يحجز 10.00 على البطاقة دون خصمه فعلياً. الفنادق وتأجير السيارات تعمل بهذه الطريقة.\n\n**انظر إلى:** `paymentType` قيمته `PA`. يُحفظ `id` في المتغير `{{authorization_id}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Capture (take the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "// A capture has its own id. Save it: refunds need it.",
+                  "pm.collectionVariables.set(\"capture_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Must not be more than the original payment"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "CP",
+                  "type": "text",
+                  "description": "CP = capture: take the held money"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments/{{authorization_id}}",
+            "description": "**What it does:** takes the money you held in step 1. You can capture less than you held.\n\n**Look at:** the capture gets its **own new id**, saved as `{{capture_id}}`. Refunds must use this new id.\n\n---\n\n**ماذا يفعل:** يخصم المبلغ الذي حجزته في الخطوة 1. يمكنك خصم مبلغ أقل من المحجوز.\n\n**انظر إلى:** عملية الخصم تحصل على **رقم جديد خاص بها**، ويُحفظ في `{{capture_id}}`. الاسترجاع يجب أن يستخدم هذا الرقم الجديد."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Refund the capture",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Must not be more than the original payment"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "RF",
+                  "type": "text",
+                  "description": "RF = refund"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments/{{capture_id}}",
+            "description": "**What it does:** refunds the captured money. Note the URL uses `{{capture_id}}`, not the authorization id.\n\n---\n\n**ماذا يفعل:** يسترجع المبلغ المخصوم. لاحظ أن الرابط يستخدم `{{capture_id}}` وليس رقم الحجز."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Authorize, then cancel",
+      "description": "Hold money, then release it without ever taking it.\n\nاحجز المبلغ، ثم ألغِ الحجز دون أن تخصمه أبداً.",
+      "item": [
+        {
+          "name": "1. Authorize (hold the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "// Save the authorization id for the next request.",
+                  "pm.collectionVariables.set(\"authorization_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text",
+                  "description": "Your channel id. Every HyperPay request needs it."
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text",
+                  "description": "Always 2 decimals, as text: 10.00 = ten"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text",
+                  "description": "Set in the environment (EUR for the shared demo account, SAR for your own)"
+                },
+                {
+                  "key": "paymentBrand",
+                  "value": "MASTER",
+                  "type": "text",
+                  "description": "VISA, MASTER or MADA"
+                },
+                {
+                  "key": "card.number",
+                  "value": "5454545454545454",
+                  "type": "text",
+                  "description": "Test card number (fake money)"
+                },
+                {
+                  "key": "card.holder",
+                  "value": "Jane Jones",
+                  "type": "text",
+                  "description": "Name on the card"
+                },
+                {
+                  "key": "card.expiryMonth",
+                  "value": "12",
+                  "type": "text",
+                  "description": "Any future date works in test mode"
+                },
+                {
+                  "key": "card.expiryYear",
+                  "value": "2030",
+                  "type": "text"
+                },
+                {
+                  "key": "card.cvv",
+                  "value": "123",
+                  "type": "text",
+                  "description": "Any 3 digits in test mode"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "PA",
+                  "type": "text",
+                  "description": "PA = pre-authorization: only hold the money"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments",
+            "description": "**What it does:** holds 10.00 on the card without taking it yet. Hotels and car rentals work this way.\n\n**Look at:** `paymentType` is `PA`. The `id` is saved as `{{authorization_id}}`.\n\n---\n\n**ماذا يفعل:** يحجز 10.00 على البطاقة دون خصمه فعلياً. الفنادق وتأجير السيارات تعمل بهذه الطريقة.\n\n**انظر إلى:** `paymentType` قيمته `PA`. يُحفظ `id` في المتغير `{{authorization_id}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Cancel the hold (reversal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// HyperPay answers with a \"result code\". This pattern matches every code that means SUCCESS.",
+                  "// Full list: https://hyperpay.docs.oppwa.com/reference/resultCodes",
+                  "const SUCCESS = /^(000\\.000\\.|000\\.100\\.1|000\\.[36]|000\\.400\\.[1][12]0|000\\.500\\.)/;",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"HyperPay says: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(SUCCESS);",
+                  "});",
+                  "",
+                  "pm.test(\"This is a reversal (RV)\", () => {",
+                  "  pm.expect(body.paymentType).to.eql(\"RV\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "RV",
+                  "type": "text",
+                  "description": "RV = reversal: cancel the hold, nothing is charged"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/payments/{{authorization_id}}",
+            "description": "**What it does:** cancels the hold. The customer is never charged. Use this when an order is cancelled before you capture.\n\n**Refund vs reversal:** a refund returns money that was already taken. A reversal cancels before money is taken.\n\n---\n\n**ماذا يفعل:** يلغي الحجز، ولا يُخصم من العميل شيء. استخدمه عند إلغاء الطلب قبل الخصم.\n\n**الفرق بين الاسترجاع والإلغاء:** الاسترجاع (Refund) يعيد مبلغاً خُصم بالفعل، أما الإلغاء (Reversal) فيلغي العملية قبل الخصم."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Checkout page for websites (COPYandPAY)",
+      "description": "How real websites take card payments: your server prepares a checkout, and the customer types the card into HyperPay's form in the browser.\n\nهكذا تستقبل المواقع الحقيقية المدفوعات: الخادم يجهّز عملية الدفع، والعميل يكتب بيانات بطاقته في نموذج HyperPay داخل المتصفح.",
+      "item": [
+        {
+          "name": "1. Prepare a checkout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 000.200.xxx means \"created / waiting for the customer\".",
+                  "const body = pm.response.json();",
+                  "const result = body.result || {};",
+                  "",
+                  "pm.test(\"Checkout created: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.match(/^000\\.200/);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"checkout_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "entityId",
+                  "value": "{{entity_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "amount",
+                  "value": "10.00",
+                  "type": "text"
+                },
+                {
+                  "key": "currency",
+                  "value": "{{currency}}",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentType",
+                  "value": "DB",
+                  "type": "text",
+                  "description": "DB = take the money when the customer pays"
+                }
+              ]
+            },
+            "url": "{{base_url}}/v1/checkouts",
+            "description": "**What it does:** creates a checkout. No card details are sent: the customer types them in the browser.\n\n**Look at:** `result.code` `000.200.100` means the checkout was created. The `id` is saved as `{{checkout_id}}`.\n\n**Then, in your website:** load the widget with this id:\n\n```html\n<script src=\"https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=CHECKOUT_ID\"></script>\n<form action=\"https://your-site.com/payment-result\" class=\"paymentWidgets\" data-brands=\"VISA MASTER MADA\"></form>\n```\n\n---\n\n**ماذا يفعل:** ينشئ عملية دفع (checkout). لا تُرسل بيانات البطاقة هنا، فالعميل يكتبها في المتصفح.\n\n**انظر إلى:** الرمز `000.200.100` في `result.code` يعني أن العملية أُنشئت. يُحفظ `id` في `{{checkout_id}}`.\n\n**بعد ذلك في موقعك:** حمّل أداة الدفع بهذا الرقم كما في المثال أعلاه."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get the checkout result",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const result = pm.response.json().result || {};",
+                  "",
+                  "pm.test(\"HyperPay answered with a result code: \" + result.description, () => {",
+                  "  pm.expect(result.code).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/v1/checkouts/{{checkout_id}}/payment?entityId={{entity_id}}",
+            "description": "**What it does:** after the customer pays in the browser, your server calls this to learn if the payment worked. **Never trust the browser alone.**\n\n**Before anyone pays**, HyperPay answers that the payment is still pending or not found. That is expected here.\n\n**Limit:** you may call this at most 2 times per minute for the same checkout.\n\n---\n\n**ماذا يفعل:** بعد أن يدفع العميل في المتصفح، يستدعي خادمك هذا الطلب ليعرف هل نجح الدفع. **لا تعتمد على المتصفح وحده أبداً.**\n\n**قبل أن يدفع أحد** سيرد HyperPay بأن العملية ما زالت معلّقة أو غير موجودة، وهذا متوقع هنا.\n\n**الحد:** مرتان كحد أقصى في الدقيقة لنفس العملية."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "authorization_id",
+      "value": ""
+    },
+    {
+      "key": "capture_id",
+      "value": ""
+    },
+    {
+      "key": "checkout_id",
+      "value": ""
+    }
+  ]
+}

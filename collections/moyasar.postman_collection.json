@@ -1,0 +1,594 @@
+{
+  "info": {
+    "_postman_id": "d2c63192-3743-d67f-1cf7-dc22e8d83e59",
+    "name": "Moyasar - Beginner Guide",
+    "description": "# Moyasar for beginners\n\nLearn the Moyasar API by sending requests in **test mode**. No real money moves.\n\n## Start in 3 steps\n1. Get your free test secret key (`sk_test_...`) from the Moyasar dashboard and paste it into `api_key` in the **Moyasar (test)** environment.\n2. Open folder **1. Quick start (no browser)**.\n3. Click **Send** on each request, in order, and read the **Test Results** tab.\n\n## Good to know\n- Authentication is **Basic Auth**: your secret key is the username and the password is empty. It is set once on the collection.\n- Amounts are in **halalas**: `1000` = 10.00 SAR.\n- Card payments need **3-D Secure** in a browser. STC Pay works fully in Postman, so the quick start uses it.\n\n---\n\n# Moyasar للمبتدئين\n\nتعلّم واجهة Moyasar بإرسال طلبات في **وضع الاختبار**. لا تتحرك أي أموال حقيقية.\n\n## ابدأ في 3 خطوات\n1. احصل مجاناً على مفتاح الاختبار السري (`sk_test_...`) من لوحة تحكم Moyasar، والصقه في `api_key` داخل البيئة **Moyasar (test)**.\n2. افتح المجلد **1. Quick start (no browser)**.\n3. اضغط **Send** على كل طلب بالترتيب، واقرأ تبويب **Test Results**.\n\n## معلومات مهمة\n- المصادقة من نوع **Basic Auth**: المفتاح السري هو اسم المستخدم وكلمة المرور فارغة، وهي مضبوطة مرة واحدة على المجموعة.\n- المبالغ **بالهللة**: `1000` تعني 10.00 ريال.\n- الدفع بالبطاقة يحتاج **3-D Secure** في المتصفح، أما STC Pay فيعمل بالكامل داخل Postman، لذلك تبدأ به البداية السريعة.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Quick start (no browser)",
+      "description": "Pay with STC Pay, confirm with the test OTP code, check the payment, then refund it. Run the requests in order.\n\nادفع عبر STC Pay، أكّد برمز التحقق التجريبي، تحقق من العملية، ثم استرجع المبلغ. نفّذ الطلبات بالترتيب.",
+      "item": [
+        {
+          "name": "1. Create an STC Pay payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 201\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is waiting for the OTP code (initiated)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"initiated\");",
+                  "});",
+                  "",
+                  "// Save the id and the OTP link for the next requests.",
+                  "pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "pm.collectionVariables.set(\"otp_url\", body.source.transaction_url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"source\": {\n    \"type\": \"stcpay\",\n    \"mobile\": \"0512345678\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/payments",
+            "description": "**What it does:** starts a 10 SAR payment with STC Pay. In real life the customer now gets an SMS code.\n\n**Look at:**\n- `status` is `initiated`: waiting for the code.\n- `source.transaction_url` is where you send the code. It is saved as `{{otp_url}}`.\n- The `id` is saved as `{{payment_id}}`.\n\nAmounts are in **halalas**: `1000` = 10.00 SAR.\n\n---\n\n**ماذا يفعل:** يبدأ دفعة بقيمة 10 ريال عبر STC Pay. في الواقع يصل للعميل الآن رمز تحقق برسالة نصية.\n\n**انظر إلى:**\n- `status` قيمته `initiated`: بانتظار الرمز.\n- `source.transaction_url` هو المكان الذي ترسل إليه الرمز، ويُحفظ في `{{otp_url}}`.\n- يُحفظ `id` في `{{payment_id}}`.\n\nالمبالغ **بالهللة**: `1000` تعني 10.00 ريال."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Send the OTP code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is paid\", () => {",
+                  "  pm.expect(body.status).to.eql(\"paid\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp_value\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{otp_url}}",
+            "description": "**What it does:** sends the SMS code the customer typed. In test mode `123456` always works. Try `111111` to see a failed payment (insufficient balance).\n\n**No API key here:** the link already contains a one-time token, so this request uses **No Auth**.\n\n**Look at:** `status` becomes `paid`.\n\n---\n\n**ماذا يفعل:** يرسل رمز التحقق الذي كتبه العميل. في وضع الاختبار الرمز `123456` ينجح دائماً. جرّب `111111` لترى دفعة فاشلة (رصيد غير كافٍ).\n\n**بدون مفتاح هنا:** الرابط يحتوي على رمز مؤقت، لذلك هذا الطلب يستخدم **No Auth**.\n\n**انظر إلى:** تصبح قيمة `status` هي `paid`."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Fetch the payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is paid\", () => {",
+                  "  pm.expect(body.status).to.eql(\"paid\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/payments/{{payment_id}}",
+            "description": "**What it does:** reads the payment by its id. In a real app your server does this to confirm the payment. **Never trust the browser redirect alone.**\n\n**Look at:** `status` should be `paid`.\n\n---\n\n**ماذا يفعل:** يقرأ عملية الدفع برقمها. في التطبيق الحقيقي يستدعيه خادمك للتأكد من الدفع. **لا تعتمد على إعادة توجيه المتصفح وحدها أبداً.**\n\n**انظر إلى:** يجب أن تكون قيمة `status` هي `paid`."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Refund the payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is refunded\", () => {",
+                  "  pm.expect(body.status).to.eql(\"refunded\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/payments/{{payment_id}}/refund",
+            "description": "**What it does:** gives the 10 SAR back. Send a smaller `amount` for a partial refund, or no body for a full refund.\n\n**Look at:** `status` becomes `refunded` and `refunded` shows the amount.\n\n---\n\n**ماذا يفعل:** يعيد العشرة ريالات. أرسل `amount` أقل لاسترجاع جزء من المبلغ، أو بدون جسم لاسترجاع المبلغ كاملاً.\n\n**انظر إلى:** تصبح قيمة `status` هي `refunded` ويظهر المبلغ المسترجع في `refunded`."
+          },
+          "response": []
+        },
+        {
+          "name": "5. List your payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a list of payments\", () => {",
+                  "  pm.expect(body.payments).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/payments",
+            "description": "**What it does:** lists your latest payments, 40 per page. Add `?page=2` or `?status=paid` to filter.\n\n---\n\n**ماذا يفعل:** يعرض آخر عمليات الدفع، 40 في كل صفحة. أضف `?page=2` أو `?status=paid` للتصفية."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Card payment (opens a browser)",
+      "description": "1. Send **1. Create a card payment**.\n2. Open the link printed in the Console and finish the test 3-D Secure page.\n3. Send **2. Check that it is paid**.\n\n---\n\n1. أرسل **1. Create a card payment**.\n2. افتح الرابط المطبوع في Console وأكمل صفحة 3-D Secure التجريبية.\n3. أرسل **2. Check that it is paid**.",
+      "item": [
+        {
+          "name": "1. Create a card payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 201\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is waiting for 3-D Secure (initiated)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"initiated\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
+                  "console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"callback_url\": \"https://example.com/payment-result\",\n  \"source\": {\n    \"type\": \"creditcard\",\n    \"name\": \"Sara Ahmed\",\n    \"number\": \"4111111111111111\",\n    \"month\": 12,\n    \"year\": 2030,\n    \"cvc\": \"123\",\n    \"manual\": false\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/payments",
+            "description": "**What it does:** starts a 10 SAR card payment with test card `4111 1111 1111 1111`.\n\n**Why a browser?** Saudi card payments need **3-D Secure**: the bank asks the customer to confirm. Moyasar answers with `status: initiated` and a link in `source.transaction_url`.\n\n**Then:** open the link printed in the **Console** (saved as `{{payment_page_url}}`), finish the test page, and send the next request.\n\nAmounts are in **halalas**: `1000` = 10.00 SAR.\n\n---\n\n**ماذا يفعل:** يبدأ دفعة بقيمة 10 ريال بالبطاقة التجريبية `4111 1111 1111 1111`.\n\n**لماذا المتصفح؟** الدفع بالبطاقات في السعودية يتطلب **3-D Secure**: البنك يطلب من العميل التأكيد. يرد Moyasar بالحالة `initiated` ورابط في `source.transaction_url`.\n\n**بعد ذلك:** افتح الرابط المطبوع في **Console** (محفوظ في `{{payment_page_url}}`)، أكمل الصفحة التجريبية، ثم أرسل الطلب التالي.\n\nالمبالغ **بالهللة**: `1000` تعني 10.00 ريال."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check that it is paid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is paid\", () => {",
+                  "  pm.expect(body.status).to.eql(\"paid\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/payments/{{payment_id}}",
+            "description": "**What it does:** reads the payment by its id. In a real app your server does this to confirm the payment. **Never trust the browser redirect alone.**\n\n**Look at:** `status` should be `paid`.\n\n---\n\n**ماذا يفعل:** يقرأ عملية الدفع برقمها. في التطبيق الحقيقي يستدعيه خادمك للتأكد من الدفع. **لا تعتمد على إعادة توجيه المتصفح وحدها أبداً.**\n\n**انظر إلى:** يجب أن تكون قيمة `status` هي `paid`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Payment link (invoice)",
+      "description": "Create a link you can send to a customer by WhatsApp, SMS or email. No website needed.\n\nأنشئ رابط دفع ترسله للعميل عبر واتساب أو رسالة نصية أو بريد. لا تحتاج إلى موقع.",
+      "item": [
+        {
+          "name": "1. Create an invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 201\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a payment link\", () => {",
+                  "  pm.expect(body.url).to.include(\"https://\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"invoice_id\", body.id);",
+                  "pm.collectionVariables.set(\"invoice_url\", body.url);",
+                  "console.log(\"Payment link:\", body.url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo: T-shirt\",\n  \"success_url\": \"https://example.com/thank-you\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/invoices",
+            "description": "**What it does:** creates a 10 SAR invoice with its own payment page.\n\n**Look at:** `url` is the link for the customer, saved as `{{invoice_url}}`. `success_url` is where the customer goes after paying.\n\n---\n\n**ماذا يفعل:** ينشئ فاتورة بقيمة 10 ريال لها صفحة دفع خاصة.\n\n**انظر إلى:** `url` هو الرابط الذي ترسله للعميل، ويُحفظ في `{{invoice_url}}`. و `success_url` هي الصفحة التي يذهب إليها العميل بعد الدفع."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Fetch the invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"It is the same invoice\", () => {",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get(\"invoice_id\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/invoices/{{invoice_id}}",
+            "description": "**What it does:** reads the invoice. `status` is `initiated` until someone pays, then `paid`.\n\n---\n\n**ماذا يفعل:** يقرأ الفاتورة. تبقى قيمة `status` هي `initiated` حتى يدفع أحد، ثم تصبح `paid`."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Cancel the invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The invoice is canceled\", () => {",
+                  "  pm.expect(body.status).to.eql(\"canceled\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{base_url}}/invoices/{{invoice_id}}/cancel",
+            "description": "**What it does:** cancels an unpaid invoice so the link stops working.\n\n---\n\n**ماذا يفعل:** يلغي فاتورة غير مدفوعة فيتوقف رابطها عن العمل."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Advanced: hold money, then capture or void",
+      "description": "1. Send **1. Authorize a card payment** and finish 3-D Secure in the browser.\n2. Send **2. Check that it is authorized**.\n3. Then send **either** 3 (take the money) **or** 4 (release it), not both.\n\n---\n\n1. أرسل **1. Authorize a card payment** وأكمل 3-D Secure في المتصفح.\n2. أرسل **2. Check that it is authorized**.\n3. ثم أرسل **إما** 3 (خصم المبلغ) **أو** 4 (إلغاء الحجز)، وليس الاثنين.",
+      "item": [
+        {
+          "name": "1. Authorize a card payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 201\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(201);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is waiting for 3-D Secure (initiated)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"initiated\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"payment_id\", body.id);",
+                  "pm.collectionVariables.set(\"payment_page_url\", body.source.transaction_url);",
+                  "console.log(\"Open this link to finish 3-D Secure:\", body.source.transaction_url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"callback_url\": \"https://example.com/payment-result\",\n  \"source\": {\n    \"type\": \"creditcard\",\n    \"name\": \"Sara Ahmed\",\n    \"number\": \"4111111111111111\",\n    \"month\": 12,\n    \"year\": 2030,\n    \"cvc\": \"123\",\n    \"manual\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/payments",
+            "description": "**What it does:** same as a card payment, but `manual: true` means \"only hold the money\". After 3-D Secure the status becomes `authorized`, not `paid`.\n\n**Then:** open the link printed in the **Console** (saved as `{{payment_page_url}}`) and finish the test 3-D Secure page.\n\n---\n\n**ماذا يفعل:** مثل الدفع بالبطاقة، لكن `manual: true` تعني \"احجز المبلغ فقط\". بعد التحقق 3-D Secure تصبح الحالة `authorized` وليس `paid`.\n\n**بعد ذلك:** افتح الرابط المطبوع في **Console** (محفوظ في `{{payment_page_url}}`) وأكمل صفحة 3-D Secure التجريبية."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check that it is authorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is on hold (authorized)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"authorized\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/payments/{{payment_id}}",
+            "description": "**What it does:** reads the payment by its id. In a real app your server does this to confirm the payment. **Never trust the browser redirect alone.**\n\n**Look at:** `status` should be `authorized`.\n\n---\n\n**ماذا يفعل:** يقرأ عملية الدفع برقمها. في التطبيق الحقيقي يستدعيه خادمك للتأكد من الدفع. **لا تعتمد على إعادة توجيه المتصفح وحدها أبداً.**\n\n**انظر إلى:** يجب أن تكون قيمة `status` هي `authorized`."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Capture (take the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is captured\", () => {",
+                  "  pm.expect(body.status).to.eql(\"captured\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/payments/{{payment_id}}/capture",
+            "description": "**What it does:** takes the money you held. You may capture less than you held.\n\n---\n\n**ماذا يفعل:** يخصم المبلغ المحجوز. يمكنك خصم مبلغ أقل من المحجوز."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Or void (release the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Moyasar replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The payment is voided\", () => {",
+                  "  pm.expect(body.status).to.eql(\"voided\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/payments/{{payment_id}}/void",
+            "description": "**What it does:** cancels the hold. The customer is never charged.\n\n---\n\n**ماذا يفعل:** يلغي الحجز، ولا يُخصم من العميل شيء."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "otp_url",
+      "value": ""
+    },
+    {
+      "key": "payment_page_url",
+      "value": ""
+    },
+    {
+      "key": "invoice_id",
+      "value": ""
+    },
+    {
+      "key": "invoice_url",
+      "value": ""
+    }
+  ]
+}

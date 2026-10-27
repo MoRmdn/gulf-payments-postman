@@ -1,0 +1,590 @@
+{
+  "info": {
+    "_postman_id": "4a7c203f-5f91-b022-ecbc-14b72d936161",
+    "name": "Tap Payments - Beginner Guide",
+    "description": "# Tap Payments for beginners\n\nLearn the Tap API by sending requests to the **test** mode. No real money moves.\n\n## Start in 3 steps\n1. Copy Tap's **shared public test key** from https://developers.tap.company/reference/testing-keys (or use your own `sk_test_...`) and paste it into `api_key` in the **Tap (test)** environment.\n2. Open folder **1. Quick start (no browser)**.\n3. Click **Send** on each request, in order, and read the **Test Results** tab.\n\n## Good to know\n- The key is not included in this file because GitHub blocks anything that looks like a secret key. Tap publishes the shared key for everyone to test with.\n- Tap shows the customer a **payment page** (`transaction.url`). Card details never touch your server.\n- Amounts are normal numbers: `10` = 10 SAR.\n\n---\n\n# Tap Payments للمبتدئين\n\nتعلّم واجهة Tap بإرسال طلبات في **وضع الاختبار**. لا تتحرك أي أموال حقيقية.\n\n## ابدأ في 3 خطوات\n1. انسخ **مفتاح الاختبار العام المشترك** من https://developers.tap.company/reference/testing-keys (أو استخدم مفتاحك `sk_test_...`) والصقه في `api_key` داخل البيئة **Tap (test)**.\n2. افتح المجلد **1. Quick start (no browser)**.\n3. اضغط **Send** على كل طلب بالترتيب، واقرأ تبويب **Test Results**.\n\n## معلومات مهمة\n- المفتاح غير مرفق في هذا الملف لأن GitHub يمنع رفع أي شيء يشبه مفتاحاً سرياً. تنشر Tap هذا المفتاح المشترك ليختبر به الجميع.\n- يعرض Tap للعميل **صفحة دفع** (`transaction.url`)، فلا تمر بيانات البطاقة بخادمك أبداً.\n- المبالغ أرقام عادية: `10` تعني 10 ريال.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Quick start (no browser)",
+      "description": "Create a customer, a charge and a payment link. Nothing here needs a browser.\n\nأنشئ عميلاً وعملية دفع ورابط دفع. لا شيء هنا يحتاج إلى متصفح.",
+      "item": [
+        {
+          "name": "1. Create a customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a customer id\", () => {",
+                  "  pm.expect(body.id).to.match(/^cus_/);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"customer_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Sara\",\n  \"last_name\": \"Ahmed\",\n  \"email\": \"sara@example.com\",\n  \"phone\": {\n    \"country_code\": \"966\",\n    \"number\": \"500000000\"\n  },\n  \"currency\": \"SAR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/customers",
+            "description": "**What it does:** saves a customer in Tap. Later charges can use the customer id instead of repeating name and email.\n\n**Look at:** the `id` (`cus_...`), saved as `{{customer_id}}`.\n\n---\n\n**ماذا يفعل:** يحفظ عميلاً في Tap، حتى تستخدم رقمه في عمليات الدفع بدلاً من تكرار الاسم والبريد.\n\n**انظر إلى:** `id` (يبدأ بـ `cus_`)، ويُحفظ في `{{customer_id}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create a charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The charge is waiting for the customer (INITIATED)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"INITIATED\");",
+                  "});",
+                  "",
+                  "// Save the ids for the next requests.",
+                  "pm.collectionVariables.set(\"charge_id\", body.id);",
+                  "pm.collectionVariables.set(\"payment_page_url\", body.transaction.url);",
+                  "console.log(\"Open this link to pay:\", body.transaction.url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"customer\": {\n    \"first_name\": \"Sara\",\n    \"last_name\": \"Ahmed\",\n    \"email\": \"sara@example.com\"\n  },\n  \"source\": {\n    \"id\": \"src_card\"\n  },\n  \"redirect\": {\n    \"url\": \"https://example.com/payment-result\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/charges",
+            "description": "**What it does:** creates a charge of 10 SAR. `source.id = src_card` means \"show Tap's card payment page\".\n\n**Look at:**\n- `status` is `INITIATED`: the customer has not paid yet.\n- `transaction.url` is the payment page. It is saved as `{{payment_page_url}}` and printed in the Postman **Console**.\n- The `id` (`chg_...`) is saved as `{{charge_id}}`.\n\nAmounts in Tap are normal numbers: `10` = 10 SAR, `10.5` = 10.50 SAR.\n\n---\n\n**ماذا يفعل:** ينشئ عملية دفع بقيمة 10 ريال. القيمة `src_card` تعني \"اعرض صفحة الدفع بالبطاقة من Tap\".\n\n**انظر إلى:**\n- `status` قيمته `INITIATED`: العميل لم يدفع بعد.\n- `transaction.url` هو رابط صفحة الدفع، ويُحفظ في `{{payment_page_url}}` ويُطبع في **Console**.\n- يُحفظ `id` (يبدأ بـ `chg_`) في `{{charge_id}}`.\n\nالمبالغ في Tap أرقام عادية: `10` تعني 10 ريال، و `10.5` تعني 10.50 ريال."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Retrieve the charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"It is the same charge\", () => {",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get(\"charge_id\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/charges/{{charge_id}}",
+            "description": "**What it does:** reads a charge by its id. In a real app your server does this after the customer comes back, to confirm the payment. **Never trust the redirect alone.**\n\n**Look at:** `status`. Still `INITIATED` here, because nobody paid yet.\n\n---\n\n**ماذا يفعل:** يقرأ عملية دفع برقمها. في التطبيق الحقيقي يستدعيه خادمك بعد عودة العميل للتأكد من الدفع. **لا تعتمد على إعادة التوجيه وحدها أبداً.**\n\n**انظر إلى:** `status`. ما زال `INITIATED` هنا لأن أحداً لم يدفع بعد."
+          },
+          "response": []
+        },
+        {
+          "name": "4. List recent charges",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a list of charges\", () => {",
+                  "  pm.expect(body.charges).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/charges/list",
+            "description": "**What it does:** lists the latest charges. Tap uses `POST` for lists, with filters in the body.\n\n> Tap's shared test key is used by many developers, so with it you will see their test charges too.\n\n---\n\n**ماذا يفعل:** يعرض آخر عمليات الدفع. يستخدم Tap الطريقة `POST` للقوائم، والفلاتر توضع في جسم الطلب.\n\n> مفتاح Tap التجريبي المشترك يستخدمه مطورون كثيرون، لذلك سترى معه عملياتهم التجريبية أيضاً."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Create a payment link (invoice)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Tap wants the due date as a timestamp in milliseconds.",
+                  "// This sets it to 7 days from now before the request is sent.",
+                  "pm.collectionVariables.set(\"invoice_due\", Date.now() + 7 * 24 * 60 * 60 * 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a payment link\", () => {",
+                  "  pm.expect(body.url).to.include(\"https://\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"invoice_id\", body.id);",
+                  "pm.collectionVariables.set(\"invoice_url\", body.url);",
+                  "console.log(\"Payment link:\", body.url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"gulf-payments-postman demo\",\n  \"due\": {{invoice_due}},\n  \"expiry\": {{invoice_due}},\n  \"customer\": {\n    \"first_name\": \"Sara\",\n    \"last_name\": \"Ahmed\",\n    \"email\": \"sara@example.com\"\n  },\n  \"order\": {\n    \"amount\": 10,\n    \"currency\": \"SAR\",\n    \"items\": [\n      {\n        \"name\": \"T-shirt\",\n        \"amount\": 10,\n        \"currency\": \"SAR\",\n        \"quantity\": 1\n      }\n    ]\n  },\n  \"currencies\": [\n    \"SAR\"\n  ],\n  \"redirect\": {\n    \"url\": \"https://example.com/payment-result\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/invoices",
+            "description": "**What it does:** creates an invoice with a payment link you can send by WhatsApp, SMS or email. No website needed.\n\n**Look at:** `url` is the link the customer opens. It is saved as `{{invoice_url}}`. Check the **Pre-request** tab to see how `{{invoice_due}}` is set.\n\n---\n\n**ماذا يفعل:** ينشئ فاتورة برابط دفع ترسله عبر واتساب أو رسالة نصية أو بريد. لا تحتاج إلى موقع.\n\n**انظر إلى:** `url` هو الرابط الذي يفتحه العميل، ويُحفظ في `{{invoice_url}}`. افتح تبويب **Pre-request** لترى كيف يُضبط `{{invoice_due}}`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Pay in the browser, then refund",
+      "description": "1. Send **1. Create a charge**.\n2. Open the link printed in the Console (or the `payment_page_url` variable) and pay with test card **4508 7500 1574 1019**, expiry **01/39**, CVV **100**.\n3. Send the other requests in order.\n\n---\n\n1. أرسل **1. Create a charge**.\n2. افتح الرابط المطبوع في Console (أو المتغير `payment_page_url`) وادفع بالبطاقة التجريبية **4508 7500 1574 1019**، تاريخ الانتهاء **01/39**، والرمز **100**.\n3. أرسل بقية الطلبات بالترتيب.",
+      "item": [
+        {
+          "name": "1. Create a charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The charge is waiting for the customer (INITIATED)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"INITIATED\");",
+                  "});",
+                  "",
+                  "// Save the ids for the next requests.",
+                  "pm.collectionVariables.set(\"charge_id\", body.id);",
+                  "pm.collectionVariables.set(\"payment_page_url\", body.transaction.url);",
+                  "console.log(\"Open this link to pay:\", body.transaction.url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"customer\": {\n    \"first_name\": \"Sara\",\n    \"last_name\": \"Ahmed\",\n    \"email\": \"sara@example.com\"\n  },\n  \"source\": {\n    \"id\": \"src_card\"\n  },\n  \"redirect\": {\n    \"url\": \"https://example.com/payment-result\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/charges",
+            "description": "**What it does:** creates a charge of 10 SAR. `source.id = src_card` means \"show Tap's card payment page\".\n\n**Look at:**\n- `status` is `INITIATED`: the customer has not paid yet.\n- `transaction.url` is the payment page. It is saved as `{{payment_page_url}}` and printed in the Postman **Console**.\n- The `id` (`chg_...`) is saved as `{{charge_id}}`.\n\nAmounts in Tap are normal numbers: `10` = 10 SAR, `10.5` = 10.50 SAR.\n\n---\n\n**ماذا يفعل:** ينشئ عملية دفع بقيمة 10 ريال. القيمة `src_card` تعني \"اعرض صفحة الدفع بالبطاقة من Tap\".\n\n**انظر إلى:**\n- `status` قيمته `INITIATED`: العميل لم يدفع بعد.\n- `transaction.url` هو رابط صفحة الدفع، ويُحفظ في `{{payment_page_url}}` ويُطبع في **Console**.\n- يُحفظ `id` (يبدأ بـ `chg_`) في `{{charge_id}}`.\n\nالمبالغ في Tap أرقام عادية: `10` تعني 10 ريال، و `10.5` تعني 10.50 ريال."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check that it is paid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The charge is paid (CAPTURED)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"CAPTURED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/charges/{{charge_id}}",
+            "description": "**What it does:** reads the charge again after you paid in the browser.\n\n**Look at:** `status` should now be `CAPTURED` (the money was taken). If it still says `INITIATED`, you have not finished paying.\n\n---\n\n**ماذا يفعل:** يقرأ عملية الدفع مرة أخرى بعد أن دفعت في المتصفح.\n\n**انظر إلى:** يجب أن يصبح `status` الآن `CAPTURED` (تم الخصم). إذا بقي `INITIATED` فأنت لم تكمل الدفع بعد."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Refund the charge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Got a refund id\", () => {",
+                  "  pm.expect(body.id).to.match(/^re_/);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"refund_id\", body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"charge_id\": \"{{charge_id}}\",\n  \"amount\": 10,\n  \"currency\": \"SAR\",\n  \"reason\": \"requested_by_customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/refunds",
+            "description": "**What it does:** returns the money to the customer. Use a smaller `amount` for a partial refund.\n\n**`reason` must be one of:** `requested_by_customer`, `duplicate`, `fraudulent`.\n\n---\n\n**ماذا يفعل:** يعيد المبلغ إلى العميل. ضع `amount` أقل لاسترجاع جزء من المبلغ.\n\n**قيمة `reason` يجب أن تكون واحدة من:** `requested_by_customer` أو `duplicate` أو `fraudulent`."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Check the refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The refund is pending or done\", () => {",
+                  "  pm.expect(body.status).to.be.oneOf([\"PENDING\", \"REFUNDED\", \"IN_PROGRESS\"]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/refunds/{{refund_id}}",
+            "description": "**What it does:** reads the refund. `status` is `PENDING` or `REFUNDED`.\n\n---\n\n**ماذا يفعل:** يقرأ عملية الاسترجاع. قيمة `status` تكون `PENDING` أو `REFUNDED`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Advanced: hold money, then capture or void",
+      "description": "1. Send **1. Authorize** and pay in the browser with the same test card as folder 2.\n2. Send **2. Check the authorization**.\n3. Then send **either** 3 (take the money) **or** 4 (release it), not both.\n\n---\n\n1. أرسل **1. Authorize** وادفع في المتصفح بنفس البطاقة التجريبية في المجلد 2.\n2. أرسل **2. Check the authorization**.\n3. ثم أرسل **إما** 3 (خصم المبلغ) **أو** 4 (إلغاء الحجز)، وليس الاثنين.",
+      "item": [
+        {
+          "name": "1. Authorize (hold the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set(\"authorization_id\", body.id);",
+                  "pm.collectionVariables.set(\"payment_page_url\", body.transaction.url);",
+                  "console.log(\"Open this link to authorize:\", body.transaction.url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10,\n  \"currency\": \"SAR\",\n  \"description\": \"gulf-payments-postman demo\",\n  \"customer\": {\n    \"first_name\": \"Sara\",\n    \"last_name\": \"Ahmed\",\n    \"email\": \"sara@example.com\"\n  },\n  \"source\": {\n    \"id\": \"src_card\"\n  },\n  \"auto\": {\n    \"type\": \"VOID\",\n    \"time\": 100\n  },\n  \"redirect\": {\n    \"url\": \"https://example.com/payment-result\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/authorize",
+            "description": "**What it does:** holds 10 SAR on the card without taking it. `auto` releases the hold automatically after 100 hours if you do nothing.\n\n**Look at:** `transaction.url` (open it to pay) and the `id` (`auth_...`), saved as `{{authorization_id}}`.\n\n---\n\n**ماذا يفعل:** يحجز 10 ريال على البطاقة دون خصمها. الحقل `auto` يلغي الحجز تلقائياً بعد 100 ساعة إذا لم تفعل شيئاً.\n\n**انظر إلى:** `transaction.url` (افتحه للدفع) و `id` (يبدأ بـ `auth_`)، ويُحفظ في `{{authorization_id}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Check the authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The money is on hold (AUTHORIZED)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"AUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/authorize/{{authorization_id}}",
+            "description": "**Look at:** `status` should be `AUTHORIZED` after you paid in the browser.\n\n---\n\n**انظر إلى:** يجب أن تكون قيمة `status` هي `AUTHORIZED` بعد الدفع في المتصفح."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Capture (take the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The money was taken (CAPTURED)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"CAPTURED\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10,\n  \"currency\": \"SAR\",\n  \"customer\": {\n    \"first_name\": \"Sara\",\n    \"last_name\": \"Ahmed\",\n    \"email\": \"sara@example.com\"\n  },\n  \"source\": {\n    \"id\": \"{{authorization_id}}\"\n  },\n  \"redirect\": {\n    \"url\": \"https://example.com/payment-result\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/charges",
+            "description": "**What it does:** turns the hold into a real charge. In Tap you capture by creating a charge whose `source.id` is the authorization id.\n\n---\n\n**ماذا يفعل:** يحوّل الحجز إلى خصم فعلي. في Tap يتم ذلك بإنشاء عملية دفع قيمة `source.id` فيها هي رقم الحجز."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Or void (release the money)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"Tap replied with status 200\", () => {",
+                  "  pm.expect(pm.response.code, \"401 means api_key is empty or wrong\").to.eql(200);",
+                  "});",
+                  "",
+                  "pm.test(\"The hold was cancelled (VOID)\", () => {",
+                  "  pm.expect(body.status).to.eql(\"VOID\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{base_url}}/authorize/{{authorization_id}}/void",
+            "description": "**What it does:** cancels the hold. The customer is never charged.\n\n---\n\n**ماذا يفعل:** يلغي الحجز، ولا يُخصم من العميل شيء."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "customer_id",
+      "value": ""
+    },
+    {
+      "key": "charge_id",
+      "value": ""
+    },
+    {
+      "key": "payment_page_url",
+      "value": ""
+    },
+    {
+      "key": "refund_id",
+      "value": ""
+    },
+    {
+      "key": "authorization_id",
+      "value": ""
+    },
+    {
+      "key": "invoice_id",
+      "value": ""
+    },
+    {
+      "key": "invoice_url",
+      "value": ""
+    },
+    {
+      "key": "invoice_due",
+      "value": ""
+    }
+  ]
+}

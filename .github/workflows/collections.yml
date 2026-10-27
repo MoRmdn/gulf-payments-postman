@@ -1,0 +1,70 @@
+# Runs the collections against the real test servers, so we notice
+# when a gateway changes its API. Only steps that need no browser run here.
+name: Collections
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # every Monday at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  hyperpay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+      # Every HyperPay folder works without a browser.
+      - name: Run all folders
+        run: >
+          postman collection run collections/hyperpay.postman_collection.json
+          -e environments/hyperpay.postman_environment.json
+          --delay-request 1500
+
+  # Add a repository secret named TAP_SECRET_KEY with Tap's shared test key
+  # (or your own) to enable it.
+  tap:
+    runs-on: ubuntu-latest
+    env:
+      TAP_KEY: ${{ secrets.TAP_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postman CLI
+        if: env.TAP_KEY != ''
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+      - name: Run quick start
+        if: env.TAP_KEY != ''
+        run: >
+          postman collection run collections/tap.postman_collection.json
+          -e environments/tap.postman_environment.json
+          -i "1. Quick start (no browser)"
+          --env-var "api_key=$TAP_KEY"
+          --delay-request 1000
+      - name: Skip without a key
+        if: env.TAP_KEY == ''
+        run: echo "No TAP_SECRET_KEY secret, skipping Tap."
+
+  # Moyasar has no public test key. Add a repository secret named
+  # MOYASAR_SECRET_KEY (Settings → Secrets and variables → Actions) to enable it.
+  moyasar:
+    runs-on: ubuntu-latest
+    env:
+      MOYASAR_KEY: ${{ secrets.MOYASAR_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Postman CLI
+        if: env.MOYASAR_KEY != ''
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+      - name: Run quick start
+        if: env.MOYASAR_KEY != ''
+        run: >
+          postman collection run collections/moyasar.postman_collection.json
+          -e environments/moyasar.postman_environment.json
+          -i "1. Quick start (no browser)"
+          --env-var "api_key=$MOYASAR_KEY"
+      - name: Skip without a key
+        if: env.MOYASAR_KEY == ''
+        run: echo "No MOYASAR_SECRET_KEY secret, skipping Moyasar."

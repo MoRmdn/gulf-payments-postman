@@ -1,0 +1,9 @@
+# Your own keys: save environments with this name and Git ignores them
+*.local.postman_environment.json
+
+# Postman CLI run reports
+*.collection-run-summary.yaml
+*.collection-run-executions.yaml
+postman-cli-reports/
+
+.DS_Store
